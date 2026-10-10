@@ -15,13 +15,13 @@ func formatBytes(n int64) string {
 	)
 	switch {
 	case n >= giB:
-		return fmt.Sprintf("%.1f ГиБ", float64(n)/float64(giB))
+		return fmt.Sprintf("%.1f GiB", float64(n)/float64(giB))
 	case n >= miB:
-		return fmt.Sprintf("%.1f МиБ", float64(n)/float64(miB))
+		return fmt.Sprintf("%.1f MiB", float64(n)/float64(miB))
 	case n >= kiB:
-		return fmt.Sprintf("%.1f КиБ", float64(n)/float64(kiB))
+		return fmt.Sprintf("%.1f KiB", float64(n)/float64(kiB))
 	default:
-		return fmt.Sprintf("%d Б", n)
+		return fmt.Sprintf("%d B", n)
 	}
 }
 
@@ -31,18 +31,18 @@ func formatHandshake(t time.Time) string {
 
 func formatHandshakeAt(t, now time.Time) string {
 	if t.IsZero() {
-		return "никогда"
+		return "never"
 	}
 	d := now.Sub(t)
 	switch {
 	case d < time.Minute:
-		return "только что"
+		return "just now"
 	case d < time.Hour:
-		return fmt.Sprintf("%d мин назад", int(d.Minutes()))
+		return fmt.Sprintf("%d min ago", int(d.Minutes()))
 	case d < 24*time.Hour:
-		return fmt.Sprintf("%d ч назад", int(d.Hours()))
+		return fmt.Sprintf("%d h ago", int(d.Hours()))
 	default:
-		return t.Local().Format("02.01.2006 15:04")
+		return t.Local().Format("02 Jan 2006 15:04")
 	}
 }
 
@@ -50,14 +50,14 @@ func formatLatency(d time.Duration) string {
 	if d <= 0 {
 		return "—"
 	}
-	return fmt.Sprintf("%d мс", d.Milliseconds())
+	return fmt.Sprintf("%d ms", d.Milliseconds())
 }
 
 func formatKind(kind status.ExitKind) string {
 	switch kind {
 	case status.ExitKindDirect:
-		return "прямое"
+		return "direct"
 	default:
-		return "туннель"
+		return "tunnel"
 	}
 }

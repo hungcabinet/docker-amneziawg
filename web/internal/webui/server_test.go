@@ -59,7 +59,7 @@ func TestHandler_LoginAndPeers(t *testing.T) {
 	}
 	body, _ := io.ReadAll(res.Body)
 	_ = res.Body.Close()
-	if res.StatusCode != http.StatusOK || !strings.Contains(string(body), "Вход") {
+	if res.StatusCode != http.StatusOK || !strings.Contains(string(body), "Sign in") {
 		t.Fatalf("unauthenticated /peers = %d, body %s", res.StatusCode, body)
 	}
 
@@ -76,7 +76,7 @@ func TestHandler_LoginAndPeers(t *testing.T) {
 		t.Fatalf("login status = %d", res.StatusCode)
 	}
 	page := string(body)
-	if !strings.Contains(page, "peer_phone") || !strings.Contains(page, "онлайн") {
+	if !strings.Contains(page, "bunny") || !strings.Contains(page, "online") {
 		t.Fatalf("peers page missing mock data: %s", page)
 	}
 }
@@ -100,7 +100,8 @@ func TestHandler_LiveSourceMessage(t *testing.T) {
 	}
 	body, _ := io.ReadAll(res.Body)
 	_ = res.Body.Close()
-	if !strings.Contains(string(body), "живой источник данных ещё не подключён") {
+	if !strings.Contains(string(body), "could not load status") &&
+		!strings.Contains(string(body), "server is down") {
 		t.Fatalf("live page = %s", body)
 	}
 }

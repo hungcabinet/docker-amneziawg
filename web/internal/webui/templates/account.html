@@ -1,30 +1,30 @@
 {{define "account"}}
 <!DOCTYPE html>
-<html lang="ru" data-theme="{{.Theme}}">
+<html lang="en" data-theme="{{.Theme}}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Учётная запись — панель AmneziaWG</title>
+  <title>Account — AmneziaWG Panel</title>
   {{template "styles"}}
 </head>
 <body>
   {{template "nav" .}}
   <main>
-    <h1>Учётная запись</h1>
+    <h1>Account</h1>
     {{if .Flash}}<div class="flash">{{.Flash}}</div>{{end}}
     {{if .Error}}<div class="error">{{.Error}}</div>{{end}}
     <div class="card">
-      <p>Текущий логин: <strong>{{.Username}}</strong></p>
+      <p>Current username: <strong>{{.Username}}</strong></p>
       <form method="post" action="/account">
-        <label for="current_password">Текущий пароль</label>
+        <label for="current_password">Current password</label>
         <input id="current_password" name="current_password" type="password" autocomplete="current-password" required>
-        <label for="new_username">Новый логин</label>
-        <input id="new_username" name="new_username" type="text" autocomplete="username" placeholder="оставьте пустым, чтобы не менять">
-        <label for="new_password">Новый пароль</label>
+        <label for="new_username">New username</label>
+        <input id="new_username" name="new_username" type="text" autocomplete="username" placeholder="leave empty to keep">
+        <label for="new_password">New password</label>
         <input id="new_password" name="new_password" type="password" autocomplete="new-password">
-        <label for="confirm_password">Подтверждение пароля</label>
+        <label for="confirm_password">Confirm password</label>
         <input id="confirm_password" name="confirm_password" type="password" autocomplete="new-password">
-        <p class="actions"><button type="submit">Сохранить</button></p>
+        <p class="actions"><button type="submit">Save</button></p>
       </form>
     </div>
   </main>

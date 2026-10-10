@@ -2,7 +2,6 @@ package status
 
 import (
 	"context"
-	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -92,7 +91,7 @@ func TestMock_Scene(t *testing.T) {
 	if len(peers) != 3 {
 		t.Fatalf("len(Peers) = %d, want 3", len(peers))
 	}
-	if !peers[0].Online || peers[0].Name != "peer_phone" || peers[0].LastHandshake.IsZero() {
+	if !peers[0].Online || peers[0].Name != "bunny" || peers[0].LastHandshake.IsZero() {
 		t.Fatalf("online peer = %+v", peers[0])
 	}
 	if peers[1].Online || peers[1].LastHandshake.IsZero() {
@@ -128,7 +127,7 @@ func TestMock_Scene(t *testing.T) {
 	}
 
 	ip, err := m.ExitIP(ctx, "wg1")
-	if err != nil || ip != "203.0.113.10" {
+	if err != nil || ip != "192.0.2.10" {
 		t.Fatalf("ExitIP(wg1) = %q, %v", ip, err)
 	}
 	ip, err = m.ExitIP(ctx, "ens3")
@@ -137,24 +136,6 @@ func TestMock_Scene(t *testing.T) {
 	}
 	if _, err := m.ExitIP(ctx, "missing"); err == nil {
 		t.Fatal("ExitIP(missing) = nil")
-	}
-}
-
-func TestLive_NotConnected(t *testing.T) {
-	t.Parallel()
-	p := NewLive()
-	ctx := context.Background()
-	if _, err := p.Server(ctx); !errors.Is(err, ErrNotConnected) {
-		t.Fatalf("Server() error = %v", err)
-	}
-	if _, err := p.Peers(ctx); !errors.Is(err, ErrNotConnected) {
-		t.Fatalf("Peers() error = %v", err)
-	}
-	if _, err := p.Exits(ctx); !errors.Is(err, ErrNotConnected) {
-		t.Fatalf("Exits() error = %v", err)
-	}
-	if _, err := p.ExitIP(ctx, "wg1"); !errors.Is(err, ErrNotConnected) {
-		t.Fatalf("ExitIP() error = %v", err)
 	}
 }
 

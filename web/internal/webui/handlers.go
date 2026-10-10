@@ -51,17 +51,17 @@ func (s *Server) handleLoginGet(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleLoginPost(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
-		s.render(w, "login", loginPage{chrome: s.pageChrome(r), Error: "не удалось прочитать форму"})
+		s.render(w, "login", loginPage{chrome: s.pageChrome(r), Error: "could not read the form"})
 		return
 	}
 	username := r.FormValue("username")
 	password := r.FormValue("password")
 	if err := s.store.Authenticate(r.Context(), username, password); err != nil {
-		s.render(w, "login", loginPage{chrome: s.pageChrome(r), Error: "неверный логин или пароль"})
+		s.render(w, "login", loginPage{chrome: s.pageChrome(r), Error: "invalid username or password"})
 		return
 	}
 	if err := s.setSession(w, username); err != nil {
-		s.render(w, "login", loginPage{chrome: s.pageChrome(r), Error: "не удалось создать сессию"})
+		s.render(w, "login", loginPage{chrome: s.pageChrome(r), Error: "could not create a session"})
 		return
 	}
 	http.Redirect(w, r, "/peers", http.StatusSeeOther)
@@ -86,7 +86,7 @@ func (s *Server) handlePeers(w http.ResponseWriter, r *http.Request) {
 	}
 	page.Server = server
 	if !server.Up {
-		page.Error = "сервер не поднят"
+		page.Error = "server is down"
 		s.render(w, "peers", page)
 		return
 	}
@@ -107,7 +107,7 @@ func (s *Server) handlePeerQR(w http.ResponseWriter, r *http.Request) {
 	}
 	png, err := qrcode.Encode(peer.Config, qrcode.Medium, 256)
 	if err != nil {
-		http.Error(w, "не удалось построить QR-код", http.StatusInternalServerError)
+		http.Error(w, "could not build QR code", http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "image/png")
@@ -154,7 +154,7 @@ func (s *Server) handleExits(w http.ResponseWriter, r *http.Request) {
 	}
 	selected, err := s.store.SelectedExit(r.Context())
 	if err != nil {
-		page.Error = "не удалось прочитать выбранный выход"
+		page.Error = "could not read the selected exit"
 		s.render(w, "exits", page)
 		return
 	}
@@ -171,29 +171,29 @@ func (s *Server) handleExits(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleSelectExit(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
-		http.Redirect(w, r, "/exits?error="+url.QueryEscape("не удалось прочитать форму"), http.StatusSeeOther)
+		http.Redirect(w, r, "/exits?error="+url.QueryEscape("could not read the form"), http.StatusSeeOther)
 		return
 	}
 	iface := r.FormValue("iface")
 	if !peerNameRe.MatchString(iface) {
-		http.Redirect(w, r, "/exits?error="+url.QueryEscape("некорректное имя интерфейса"), http.StatusSeeOther)
+		http.Redirect(w, r, "/exits?error="+url.QueryEscape("invalid interface name"), http.StatusSeeOther)
 		return
 	}
 	if err := s.store.SetSelectedExit(r.Context(), iface); err != nil {
-		http.Redirect(w, r, "/exits?error="+url.QueryEscape("не удалось сохранить выход"), http.StatusSeeOther)
+		http.Redirect(w, r, "/exits?error="+url.QueryEscape("could not save the exit"), http.StatusSeeOther)
 		return
 	}
-	http.Redirect(w, r, "/exits?ok="+url.QueryEscape("выход сохранён: "+iface), http.StatusSeeOther)
+	http.Redirect(w, r, "/exits?ok="+url.QueryEscape("exit saved: "+iface), http.StatusSeeOther)
 }
 
 func (s *Server) handleExitIP(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
-		http.Redirect(w, r, "/exits?error="+url.QueryEscape("не удалось прочитать форму"), http.StatusSeeOther)
+		http.Redirect(w, r, "/exits?error="+url.QueryEscape("could not read the form"), http.StatusSeeOther)
 		return
 	}
 	iface := r.FormValue("iface")
 	if !peerNameRe.MatchString(iface) {
-		http.Redirect(w, r, "/exits?error="+url.QueryEscape("некорректное имя интерфейса"), http.StatusSeeOther)
+		http.Redirect(w, r, "/exits?error="+url.QueryEscape("invalid interface name"), http.StatusSeeOther)
 		return
 	}
 	ip, err := s.provider.ExitIP(r.Context(), iface)
@@ -219,7 +219,7 @@ func (s *Server) handleAccountPost(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		s.render(w, "account", accountPage{
 			chrome: s.pageChrome(r),
-			Error:  "не удалось прочитать форму",
+			Error:  "could not read the form",
 		})
 		return
 	}
@@ -230,7 +230,7 @@ func (s *Server) handleAccountPost(w http.ResponseWriter, r *http.Request) {
 	if newPass != "" && newPass != confirm {
 		s.render(w, "account", accountPage{
 			chrome: s.pageChrome(r),
-			Error:  "новый пароль и подтверждение не совпадают",
+			Error:  "new password and confirmation do not match",
 		})
 		return
 	}
@@ -249,29 +249,26 @@ func (s *Server) handleAccountPost(w http.ResponseWriter, r *http.Request) {
 	if err := s.setSession(w, username); err != nil {
 		page := accountPage{
 			chrome: s.pageChrome(r),
-			Error:  "учётные данные обновлены, но сессию обновить не удалось — войдите снова",
+			Error:  "credentials updated, but the session could not be refreshed — sign in again",
 		}
 		page.Username = username
 		s.render(w, "account", page)
 		return
 	}
-	http.Redirect(w, r, "/account?ok="+url.QueryEscape("учётные данные обновлены"), http.StatusSeeOther)
+	http.Redirect(w, r, "/account?ok="+url.QueryEscape("credentials updated"), http.StatusSeeOther)
 }
 
-func userFacing(err error) string {
-	if errors.Is(err, status.ErrNotConnected) {
-		return "живой источник данных ещё не подключён"
-	}
-	return "не удалось получить данные"
+func userFacing(error) string {
+	return "could not load status"
 }
 
 func credentialsError(err error) string {
 	switch {
 	case errors.Is(err, store.ErrInvalidPassword):
-		return "текущий пароль неверный"
+		return "current password is wrong"
 	case errors.Is(err, store.ErrNothingToChange):
-		return "укажите новый логин или пароль"
+		return "enter a new username or password"
 	default:
-		return "не удалось сохранить изменения"
+		return "could not save changes"
 	}
 }

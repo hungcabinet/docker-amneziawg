@@ -13,6 +13,7 @@ const (
 	defaultListen          = ":8080"
 	defaultUser            = "admin"
 	defaultDBPath          = "data/panel.db"
+	defaultConfigDir       = "/config"
 	defaultDirectInterface = "eth0"
 	defaultSource          = SourceMock
 )
@@ -24,6 +25,7 @@ type Config struct {
 	User            string
 	Password        string
 	DBPath          string
+	ConfigDir       string
 	DirectInterface string
 	PingTargets     []string
 	PingTargetsByIF map[string][]string
@@ -37,6 +39,7 @@ func Load() (Config, error) {
 		User:            envOr("PANEL_USER", defaultUser),
 		Password:        os.Getenv("PANEL_PASSWORD"),
 		DBPath:          envOr("PANEL_DB_PATH", defaultDBPath),
+		ConfigDir:       envOr("PANEL_CONFIG_DIR", defaultConfigDir),
 		DirectInterface: envOr("PANEL_DIRECT_INTERFACE", defaultDirectInterface),
 		PingTargets:     splitCSV(envOr("PANEL_PING_TARGETS", "1.1.1.1,8.8.8.8")),
 		PingTargetsByIF: map[string][]string{},

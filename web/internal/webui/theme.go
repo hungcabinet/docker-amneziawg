@@ -28,9 +28,9 @@ func (c chrome) NextTheme() string {
 
 func (c chrome) ThemeLabel() string {
 	if c.Theme == themeDark {
-		return "Светлая тема"
+		return "Light theme"
 	}
-	return "Тёмная тема"
+	return "Dark theme"
 }
 
 func (s *Server) pageChrome(r *http.Request) chrome {

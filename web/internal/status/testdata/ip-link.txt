@@ -1,0 +1,5 @@
+lo               UNKNOWN        00:00:00:00:00:00 <LOOPBACK,UP,LOWER_UP>
+eth0@if2         UP             02:00:00:00:00:01 <BROADCAST,MULTICAST,UP,LOWER_UP>
+wg0              UNKNOWN        <POINTOPOINT,NOARP,UP,LOWER_UP>
+wgup1            UNKNOWN        <POINTOPOINT,NOARP,UP,LOWER_UP>
+wgup2            UNKNOWN        <POINTOPOINT,NOARP,UP,LOWER_UP>

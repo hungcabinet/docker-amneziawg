@@ -192,16 +192,16 @@
 {{define "nav"}}
 <header>
   <div class="brand">
-    <strong>Панель AmneziaWG</strong>
+    <strong>AmneziaWG Panel</strong>
     {{template "theme-toggle" .}}
   </div>
   <nav>
-    <a href="/peers">Пиры</a>
-    <a href="/exits">Выходы</a>
-    <a href="/account">Учётная запись</a>
+    <a href="/peers">Peers</a>
+    <a href="/exits">Exits</a>
+    <a href="/account">Account</a>
     <span class="muted">{{.Username}}</span>
     <form method="post" action="/logout" style="margin:0">
-      <button type="submit" class="link">Выйти</button>
+      <button type="submit" class="link">Log out</button>
     </form>
   </nav>
 </header>

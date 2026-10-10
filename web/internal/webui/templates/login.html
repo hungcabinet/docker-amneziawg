@@ -1,29 +1,29 @@
 {{define "login"}}
 <!DOCTYPE html>
-<html lang="ru" data-theme="{{.Theme}}">
+<html lang="en" data-theme="{{.Theme}}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Вход — панель AmneziaWG</title>
+  <title>Sign in — AmneziaWG Panel</title>
   {{template "styles"}}
 </head>
 <body>
   <header>
     <div class="brand">
-      <strong>Панель AmneziaWG</strong>
+      <strong>AmneziaWG Panel</strong>
       {{template "theme-toggle" .}}
     </div>
   </header>
   <main class="login-wrap">
     <div class="card">
-      <h1>Вход</h1>
+      <h1>Sign in</h1>
       {{if .Error}}<div class="error">{{.Error}}</div>{{end}}
       <form method="post" action="/login">
-        <label for="username">Логин</label>
+        <label for="username">Username</label>
         <input id="username" name="username" type="text" autocomplete="username" required>
-        <label for="password">Пароль</label>
+        <label for="password">Password</label>
         <input id="password" name="password" type="password" autocomplete="current-password" required>
-        <p class="actions"><button type="submit">Войти</button></p>
+        <p class="actions"><button type="submit">Sign in</button></p>
       </form>
     </div>
   </main>

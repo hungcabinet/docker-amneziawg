@@ -4,6 +4,12 @@ name: Publish image
 
 on:
   workflow_dispatch:
+    inputs:
+      image_suffix:
+        description: Suffix after the tools version (3.1.20260812-webui.1)
+        required: true
+        default: webui.1
+        type: string
 
 env:
   REGISTRY: ghcr.io
@@ -21,18 +27,27 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Resolve upstream version pins
+      - name: Resolve versions
         id: versions
         run: |
           AWG_GO=$(grep '^ARG AMNEZIAWG_GO_VERSION=' Dockerfile | cut -d= -f2)
           AWG_TOOLS=$(grep '^ARG AMNEZIAWG_TOOLS_VERSION=' Dockerfile | cut -d= -f2)
+          SUFFIX=$(printf '%s' "${{ github.event.inputs.image_suffix }}" | tr -d '[:space:]')
           if [[ -z "$AWG_GO" || -z "$AWG_TOOLS" ]]; then
             echo "::error::Could not read Dockerfile ARG pins"
             exit 1
           fi
+          if [[ ! "$SUFFIX" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then
+            echo "::error::image_suffix must be a Docker tag fragment, e.g. webui.1"
+            exit 1
+          fi
+          TOOLS_VERSION="${AWG_TOOLS#v}"
+          IMAGE_TAG="${TOOLS_VERSION}-${SUFFIX}"
           echo "amneziawg_go=${AWG_GO}" >> "$GITHUB_OUTPUT"
           echo "amneziawg_tools=${AWG_TOOLS}" >> "$GITHUB_OUTPUT"
-          echo "tools_version=${AWG_TOOLS#v}" >> "$GITHUB_OUTPUT"
+          echo "tools_version=${TOOLS_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "image_tag=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+          echo "Publishing ${IMAGE_TAG} (go=${AWG_GO} tools=${AWG_TOOLS})"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -56,7 +71,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=latest
-            type=raw,value=${{ steps.versions.outputs.tools_version }}
+            type=raw,value=${{ steps.versions.outputs.image_tag }}
             type=sha,prefix=sha-
 
       - name: Build and push
@@ -71,7 +86,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=${{ github.workflow }}
           build-args: |
             BUILD_DATE=${{ github.event.repository.updated_at }}
-            VERSION=${{ steps.versions.outputs.tools_version }}
+            VERSION=${{ steps.versions.outputs.image_tag }}
             AMNEZIAWG_GO_VERSION=${{ steps.versions.outputs.amneziawg_go }}
             AMNEZIAWG_TOOLS_VERSION=${{ steps.versions.outputs.amneziawg_tools }}
           provenance: false

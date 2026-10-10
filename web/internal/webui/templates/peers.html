@@ -1,43 +1,43 @@
 {{define "peers"}}
 <!DOCTYPE html>
-<html lang="ru" data-theme="{{.Theme}}">
+<html lang="en" data-theme="{{.Theme}}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Пиры — панель AmneziaWG</title>
+  <title>Peers — AmneziaWG Panel</title>
   {{template "styles"}}
 </head>
 <body>
   {{template "nav" .}}
   <main>
-    <h1>Пиры сервера</h1>
+    <h1>Server peers</h1>
     {{if .Error}}<div class="error">{{.Error}}</div>{{end}}
     {{if .Server.Up}}
-    <p class="muted">Интерфейс {{.Server.Interface}}, порт {{.Server.ListenPort}}</p>
+    <p class="muted">Interface {{.Server.Interface}}, port {{.Server.ListenPort}}</p>
     {{end}}
     {{range .Peers}}
     <article class="card">
       <div class="row">
         <div>
           <strong>{{.Name}}</strong>
-          {{if .Online}}<span class="badge ok">онлайн</span>{{else}}<span class="badge bad">не онлайн</span>{{end}}
+          {{if .Online}}<span class="badge ok">online</span>{{else}}<span class="badge bad">offline</span>{{end}}
         </div>
-        <div class="muted">последний раз: {{handshake .LastHandshake}}</div>
+        <div class="muted">last seen: {{handshake .LastHandshake}}</div>
       </div>
-      <p>Принято {{bytes .RxBytes}} · отправлено {{bytes .TxBytes}}</p>
+      <p>Received {{bytes .RxBytes}} · sent {{bytes .TxBytes}}</p>
       <div class="actions">
-        <button type="button" onclick="document.getElementById('qr-{{.Name}}').showModal()">QR-код</button>
-        <button type="button" onclick="copyConfig('cfg-{{.Name}}')">Копировать конфиг</button>
+        <button type="button" onclick="document.getElementById('qr-{{.Name}}').showModal()">QR code</button>
+        <button type="button" onclick="copyConfig('cfg-{{.Name}}')">Copy config</button>
       </div>
       <textarea class="sr-only" id="cfg-{{.Name}}" readonly>{{.Config}}</textarea>
       <dialog id="qr-{{.Name}}">
-        <p><strong>QR-код {{.Name}}</strong></p>
-        <img src="/peers/{{.Name}}/qr" width="256" height="256" alt="QR-код {{.Name}}">
-        <form method="dialog"><p class="actions"><button type="submit" class="secondary">Закрыть</button></p></form>
+        <p><strong>QR code {{.Name}}</strong></p>
+        <img src="/peers/{{.Name}}/qr" width="256" height="256" alt="QR code {{.Name}}">
+        <form method="dialog"><p class="actions"><button type="submit" class="secondary">Close</button></p></form>
       </dialog>
     </article>
     {{else}}
-      {{if not .Error}}<p class="muted">Пиров нет.</p>{{end}}
+      {{if not .Error}}<p class="muted">No peers.</p>{{end}}
     {{end}}
   </main>
   <script>

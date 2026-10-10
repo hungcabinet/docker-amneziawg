@@ -134,7 +134,7 @@ func (s *Server) render(w http.ResponseWriter, name string, data any) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := s.tmpl.ExecuteTemplate(w, name, data); err != nil {
 		slog.Error("render template", "name", name, "err", err)
-		http.Error(w, "ошибка отрисовки страницы", http.StatusInternalServerError)
+		http.Error(w, "page render error", http.StatusInternalServerError)
 	}
 }
 

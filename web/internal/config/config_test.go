@@ -10,6 +10,7 @@ func TestLoad_Defaults(t *testing.T) {
 	t.Setenv("PANEL_SOURCE", "")
 	t.Setenv("PANEL_LISTEN", "")
 	t.Setenv("PANEL_DB_PATH", "")
+	t.Setenv("PANEL_CONFIG_DIR", "")
 	t.Setenv("PANEL_DIRECT_INTERFACE", "")
 	t.Setenv("PANEL_PING_TARGETS", "")
 
@@ -26,6 +27,9 @@ func TestLoad_Defaults(t *testing.T) {
 	if cfg.Listen != defaultListen {
 		t.Errorf("Listen = %q, want %q", cfg.Listen, defaultListen)
 	}
+	if cfg.ConfigDir != defaultConfigDir {
+		t.Errorf("ConfigDir = %q, want %q", cfg.ConfigDir, defaultConfigDir)
+	}
 	if cfg.DirectInterface != defaultDirectInterface {
 		t.Errorf("DirectInterface = %q, want %q", cfg.DirectInterface, defaultDirectInterface)
 	}
@@ -36,6 +40,7 @@ func TestLoad_Defaults(t *testing.T) {
 
 func TestLoad_SourceAndNamedPingTargets(t *testing.T) {
 	t.Setenv("PANEL_SOURCE", "LIVE")
+	t.Setenv("PANEL_CONFIG_DIR", "/tmp/awg-config")
 	t.Setenv("PANEL_DIRECT_INTERFACE", "ens3")
 	t.Setenv("PANEL_PING_TARGETS", "1.1.1.1, 8.8.8.8")
 	t.Setenv("PANEL_PING_TARGETS_WG1", "9.9.9.9")
@@ -47,6 +52,9 @@ func TestLoad_SourceAndNamedPingTargets(t *testing.T) {
 	}
 	if cfg.Source != SourceLive {
 		t.Errorf("Source = %q, want %q", cfg.Source, SourceLive)
+	}
+	if cfg.ConfigDir != "/tmp/awg-config" {
+		t.Errorf("ConfigDir = %q, want /tmp/awg-config", cfg.ConfigDir)
 	}
 	if got := cfg.PingTargetsFor("wg1"); !stringSliceEqual(got, []string{"9.9.9.9"}) {
 		t.Errorf("PingTargetsFor(wg1) = %v", got)

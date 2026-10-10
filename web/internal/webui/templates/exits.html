@@ -1,16 +1,16 @@
 {{define "exits"}}
 <!DOCTYPE html>
-<html lang="ru" data-theme="{{.Theme}}">
+<html lang="en" data-theme="{{.Theme}}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Выходы — панель AmneziaWG</title>
+  <title>Exits — AmneziaWG Panel</title>
   {{template "styles"}}
 </head>
 <body>
   {{template "nav" .}}
   <main>
-    <h1>Выходы</h1>
+    <h1>Exits</h1>
     {{if .Flash}}<div class="flash">{{.Flash}}</div>{{end}}
     {{if .Error}}<div class="error">{{.Error}}</div>{{end}}
     {{range .Exits}}
@@ -19,19 +19,19 @@
         <div>
           <strong>{{.Name}}</strong>
           <span class="muted">{{kind .Kind}}</span>
-          {{if eq $.SelectedExit .Name}}<span class="badge ok">текущий выход</span>{{end}}
+          {{if eq $.SelectedExit .Name}}<span class="badge ok">current exit</span>{{end}}
         </div>
       </div>
-      {{if eq $.IPIface .Name}}<p>IP выхода: <strong>{{$.IP}}</strong></p>{{end}}
+      {{if eq $.IPIface .Name}}<p>Exit IP: <strong>{{$.IP}}</strong></p>{{end}}
       <table>
-        <thead><tr><th>Адрес</th><th>Пинг</th></tr></thead>
+        <thead><tr><th>Address</th><th>Ping</th></tr></thead>
         <tbody>
           {{range .Pings}}
           <tr>
             <td>{{.Target}}</td>
             <td>
               {{if .OK}}<span class="badge ok">{{latency .Latency}}</span>
-              {{else}}<span class="badge bad">{{if .Error}}{{.Error}}{{else}}нет ответа{{end}}</span>{{end}}
+              {{else}}<span class="badge bad">{{if .Error}}{{.Error}}{{else}}no reply{{end}}</span>{{end}}
             </td>
           </tr>
           {{end}}
@@ -41,17 +41,17 @@
         {{if ne $.SelectedExit .Name}}
         <form method="post" action="/exits/select">
           <input type="hidden" name="iface" value="{{.Name}}">
-          <button type="submit">Сделать выходом</button>
+          <button type="submit">Use as exit</button>
         </form>
         {{end}}
         <form method="post" action="/exits/ip">
           <input type="hidden" name="iface" value="{{.Name}}">
-          <button type="submit" class="secondary">Узнать IP</button>
+          <button type="submit" class="secondary">Lookup IP</button>
         </form>
       </div>
     </article>
     {{else}}
-      {{if not .Error}}<p class="muted">Клиентских интерфейсов нет.</p>{{end}}
+      {{if not .Error}}<p class="muted">No client interfaces.</p>{{end}}
     {{end}}
   </main>
 </body>

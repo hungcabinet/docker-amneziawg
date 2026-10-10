@@ -61,28 +61,28 @@ func (m *Mock) Peers(context.Context) ([]Peer, error) {
 	now := m.now()
 	return []Peer{
 		{
-			Name:          "peer_phone",
+			Name:          "bunny",
 			Online:        true,
 			LastHandshake: now.Add(-30 * time.Second),
 			RxBytes:       12 * 1024 * 1024,
 			TxBytes:       3 * 1024 * 1024,
-			Config:        mockConfig("peer_phone", "10.13.13.2/32"),
+			Config:        mockConfig("bunny", "10.13.13.2/32"),
 		},
 		{
-			Name:          "peer_laptop",
+			Name:          "bear",
 			Online:        false,
 			LastHandshake: now.Add(-2 * time.Hour),
 			RxBytes:       450 * 1024 * 1024,
 			TxBytes:       80 * 1024 * 1024,
-			Config:        mockConfig("peer_laptop", "10.13.13.3/32"),
+			Config:        mockConfig("bear", "10.13.13.3/32"),
 		},
 		{
-			Name:          "peer1",
+			Name:          "deer",
 			Online:        false,
 			LastHandshake: time.Time{},
 			RxBytes:       0,
 			TxBytes:       0,
-			Config:        mockConfig("peer1", "10.13.13.4/32"),
+			Config:        mockConfig("deer", "10.13.13.4/32"),
 		},
 	}, nil
 }
@@ -112,7 +112,7 @@ func (m *Mock) Exits(context.Context) ([]Exit, error) {
 func (m *Mock) ExitIP(_ context.Context, iface string) (string, error) {
 	switch iface {
 	case "wg1":
-		return "203.0.113.10", nil
+		return "192.0.2.10", nil
 	case "wg2":
 		return "198.51.100.20", nil
 	case m.direct:

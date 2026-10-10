@@ -73,7 +73,7 @@ func New(cfg config.Config) (Provider, error) {
 	case SourceMock:
 		return NewMock(cfg), nil
 	case SourceLive:
-		return NewLive(), nil
+		return NewLive(cfg), nil
 	default:
 		return nil, fmt.Errorf("unknown panel source %q", cfg.Source)
 	}

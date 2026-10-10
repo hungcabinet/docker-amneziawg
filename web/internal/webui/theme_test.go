@@ -83,7 +83,7 @@ func TestHandler_ThemeCookie(t *testing.T) {
 	if res.StatusCode != http.StatusOK {
 		t.Fatalf("theme status = %d", res.StatusCode)
 	}
-	if !strings.Contains(body, `data-theme="dark"`) || !strings.Contains(body, `aria-label="Светлая тема"`) {
+	if !strings.Contains(body, `data-theme="dark"`) || !strings.Contains(body, `aria-label="Light theme"`) {
 		t.Fatalf("dark theme not applied: %s", body)
 	}
 
