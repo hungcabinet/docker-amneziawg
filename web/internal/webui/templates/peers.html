@@ -1,0 +1,57 @@
+{{define "peers"}}
+<!DOCTYPE html>
+<html lang="ru" data-theme="{{.Theme}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Пиры — панель AmneziaWG</title>
+  {{template "styles"}}
+</head>
+<body>
+  {{template "nav" .}}
+  <main>
+    <h1>Пиры сервера</h1>
+    {{if .Error}}<div class="error">{{.Error}}</div>{{end}}
+    {{if .Server.Up}}
+    <p class="muted">Интерфейс {{.Server.Interface}}, порт {{.Server.ListenPort}}</p>
+    {{end}}
+    {{range .Peers}}
+    <article class="card">
+      <div class="row">
+        <div>
+          <strong>{{.Name}}</strong>
+          {{if .Online}}<span class="badge ok">онлайн</span>{{else}}<span class="badge bad">не онлайн</span>{{end}}
+        </div>
+        <div class="muted">последний раз: {{handshake .LastHandshake}}</div>
+      </div>
+      <p>Принято {{bytes .RxBytes}} · отправлено {{bytes .TxBytes}}</p>
+      <div class="actions">
+        <button type="button" onclick="document.getElementById('qr-{{.Name}}').showModal()">QR-код</button>
+        <button type="button" onclick="copyConfig('cfg-{{.Name}}')">Копировать конфиг</button>
+      </div>
+      <textarea class="sr-only" id="cfg-{{.Name}}" readonly>{{.Config}}</textarea>
+      <dialog id="qr-{{.Name}}">
+        <p><strong>QR-код {{.Name}}</strong></p>
+        <img src="/peers/{{.Name}}/qr" width="256" height="256" alt="QR-код {{.Name}}">
+        <form method="dialog"><p class="actions"><button type="submit" class="secondary">Закрыть</button></p></form>
+      </dialog>
+    </article>
+    {{else}}
+      {{if not .Error}}<p class="muted">Пиров нет.</p>{{end}}
+    {{end}}
+  </main>
+  <script>
+    async function copyConfig(id) {
+      const el = document.getElementById(id);
+      try {
+        await navigator.clipboard.writeText(el.value);
+      } catch (e) {
+        el.classList.remove('sr-only');
+        el.focus();
+        el.select();
+      }
+    }
+  </script>
+</body>
+</html>
+{{end}}
