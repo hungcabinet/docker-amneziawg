@@ -38,7 +38,18 @@ RUN make && \
     chmod +x /tools-install/usr/bin/awg-quick
 
 # ============================================================================
-# Stage 3: Runtime image using LinuxServer base
+# Stage 3: Compile the fork panel (not in upstream)
+# ============================================================================
+FROM golang:1.26.5-alpine AS panel-builder
+
+WORKDIR /src
+COPY web/go.mod web/go.sum ./
+RUN go mod download
+COPY web/ ./
+RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /panel ./cmd/panel
+
+# ============================================================================
+# Stage 4: Runtime image using LinuxServer base
 # ============================================================================
 FROM ghcr.io/linuxserver/baseimage-alpine:3.24
 
@@ -81,12 +92,13 @@ RUN \
 COPY --from=go-builder /src/amneziawg-go /usr/bin/
 COPY --from=tools-builder /tools-install/usr/bin/awg /usr/bin/
 COPY --from=tools-builder /tools-install/usr/bin/awg-quick /usr/bin/
+COPY --from=panel-builder /panel /usr/bin/panel
 
 # Create symlinks for WireGuard compatibility
 RUN \
   ln -sf /usr/bin/awg /usr/bin/wg && \
   ln -sf /usr/bin/awg-quick /usr/bin/wg-quick && \
-  chmod +x /usr/bin/awg /usr/bin/awg-quick /usr/bin/amneziawg-go
+  chmod +x /usr/bin/awg /usr/bin/awg-quick /usr/bin/amneziawg-go /usr/bin/panel
 
 # Apply awg-quick sysctl patch to avoid errors when sysctl is already set
 RUN sed -i 's|\[\[ $proto == -4 \]\] && cmd sysctl -q net\.ipv4\.conf\.all\.src_valid_mark=1|[[ $proto == -4 ]] \&\& [[ $(sysctl -n net.ipv4.conf.all.src_valid_mark) != 1 ]] \&\& cmd sysctl -q net.ipv4.conf.all.src_valid_mark=1|' /usr/bin/awg-quick
@@ -105,3 +117,4 @@ COPY /root /
 
 # ports and volumes
 EXPOSE 51820/udp
+EXPOSE 8888/tcp

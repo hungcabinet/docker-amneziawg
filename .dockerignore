@@ -27,3 +27,8 @@ SECURITY.md
 # Docker files not needed in build context
 docker-compose.yml
 docker-compose.override.yml
+
+# Panel local state and build artifacts (source in web/ is copied)
+web/data/
+web/panel
+web/panel.exe

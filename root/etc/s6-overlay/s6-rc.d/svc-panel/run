@@ -1,0 +1,10 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+# CoreDNS health listens on 8080; keep the panel off that port in the container.
+export PANEL_LISTEN="${PANEL_LISTEN:-:8888}"
+export PANEL_DB_PATH="${PANEL_DB_PATH:-/config/panel/panel.db}"
+export PANEL_SOURCE="${PANEL_SOURCE:-live}"
+
+echo "**** Starting panel on ${PANEL_LISTEN} (source=${PANEL_SOURCE}) ****"
+exec /usr/bin/panel
