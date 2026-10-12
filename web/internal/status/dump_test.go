@@ -2,6 +2,7 @@ package status
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 )
@@ -56,6 +57,39 @@ func TestParseDump_ListenPortDoesNotMarkServer(t *testing.T) {
 	}
 	if _, ok := findServer(ifaces); ok {
 		t.Fatal("client tunnel with listen port must not be the server")
+	}
+}
+
+func TestAssignRoles(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "wg_confs"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	confs := map[string]string{
+		"wg0.conf":   "[Interface]\nListenPort = 51820\n\n[Peer]\n# Endpoint = example.com:51820\nAllowedIPs = 10.13.13.2/32\n",
+		"wgup1.conf": "[Interface]\n\n[Peer]\n  Endpoint=[2001:db8::10]:51820\n",
+	}
+	for name, text := range confs {
+		if err := os.WriteFile(filepath.Join(root, "wg_confs", name), []byte(text), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	ifaces := []awgInterface{
+		{Name: "wg0", Peers: []awgPeer{{Endpoint: "203.0.113.25:41820"}}},
+		{Name: "wgup1", Peers: []awgPeer{{Endpoint: "(none)"}}},
+		{Name: "wgnoconf", Peers: []awgPeer{{Endpoint: "192.0.2.10:51820"}}},
+	}
+	assignRoles(ifaces, root)
+	if !ifaces[0].isServer() || ifaces[0].isTunnel() {
+		t.Fatalf("wg0 with a connected peer must stay the server: %+v", ifaces[0])
+	}
+	if !ifaces[1].isTunnel() || ifaces[1].isServer() {
+		t.Fatalf("wgup1 conf has an Endpoint: %+v", ifaces[1])
+	}
+	if ifaces[2].role != roleUnknown || !ifaces[2].isTunnel() {
+		t.Fatalf("interface without conf must fall back to dump endpoints: %+v", ifaces[2])
 	}
 }
 

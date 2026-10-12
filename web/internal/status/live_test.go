@@ -43,8 +43,8 @@ func (f fakeRunner) ping(_ context.Context, iface, target string) (string, error
 	return res.out, res.err
 }
 
-func (f fakeRunner) exitIP(_ context.Context, iface string) (string, error) {
-	res, ok := f.ips[iface]
+func (f fakeRunner) exitIP(_ context.Context, iface string, family ipFamily) (string, error) {
+	res, ok := f.ips[iface+" "+string(family)]
 	if !ok {
 		return "", errors.New("unexpected exit ip")
 	}
@@ -104,13 +104,13 @@ func TestLive_FixtureScene(t *testing.T) {
 	if len(exits) != 3 {
 		t.Fatalf("len(Exits) = %d, want 3: %+v", len(exits), exits)
 	}
-	if exits[0].Name != "wgup1" || exits[0].Kind != ExitKindTunnel {
+	if exits[0].Name != "wgup1" || exits[0].Kind != ExitKindTunnel || exits[0].Endpoint != "192.0.2.10:51820" {
 		t.Fatalf("exit[0] = %+v", exits[0])
 	}
-	if exits[1].Name != "wgup2" || exits[1].Kind != ExitKindTunnel {
+	if exits[1].Name != "wgup2" || exits[1].Kind != ExitKindTunnel || exits[1].Endpoint != "198.51.100.20:51820" {
 		t.Fatalf("exit[1] = %+v", exits[1])
 	}
-	if exits[2].Name != "eth0" || exits[2].Kind != ExitKindDirect {
+	if exits[2].Name != "eth0" || exits[2].Kind != ExitKindDirect || exits[2].Endpoint != "" {
 		t.Fatalf("exit[2] = %+v", exits[2])
 	}
 	for _, exit := range exits {
@@ -122,13 +122,17 @@ func TestLive_FixtureScene(t *testing.T) {
 		}
 	}
 
-	ip, err := live.ExitIP(ctx, "wgup1")
-	if err != nil || ip != "192.0.2.10" {
-		t.Fatalf("ExitIP(wgup1) = %q, %v", ip, err)
+	ips, err := live.ExitIP(ctx, "wgup1")
+	if err != nil || ips != (ExitIPs{V4: "192.0.2.10", V6: "2001:db8::10"}) {
+		t.Fatalf("ExitIP(wgup1) = %+v, %v", ips, err)
 	}
-	ip, err = live.ExitIP(ctx, "eth0@if2")
-	if err != nil || ip != "192.0.2.1" {
-		t.Fatalf("ExitIP(eth0@if2) = %q, %v", ip, err)
+	ips, err = live.ExitIP(ctx, "eth0@if2")
+	if err != nil || ips != (ExitIPs{V4: "192.0.2.1"}) {
+		t.Fatalf("ExitIP(eth0@if2) = %+v, %v", ips, err)
+	}
+	ips, err = live.ExitIP(ctx, "wgup2")
+	if err != nil || ips != (ExitIPs{V6: "2001:db8::20"}) {
+		t.Fatalf("ExitIP(wgup2) = %+v, %v", ips, err)
 	}
 	if _, err := live.ExitIP(ctx, "wg0"); !errors.Is(err, ErrUnknownInterface) {
 		t.Fatalf("ExitIP(wg0) error = %v", err)
@@ -149,8 +153,8 @@ func TestLive_ServerDown(t *testing.T) {
 		pings: map[string]cmdResult{
 			"wgup1 1.1.1.1": {out: "64 bytes from 1.1.1.1: icmp_seq=1 ttl=55 time=18.0 ms"},
 			"wgup1 8.8.8.8": {out: "64 bytes from 8.8.8.8: icmp_seq=1 ttl=55 time=18.0 ms"},
-			"eth0 1.1.1.1":     {out: "64 bytes from 1.1.1.1: icmp_seq=1 ttl=55 time=18.0 ms"},
-			"eth0 8.8.8.8":     {out: "64 bytes from 8.8.8.8: icmp_seq=1 ttl=55 time=18.0 ms"},
+			"eth0 1.1.1.1":  {out: "64 bytes from 1.1.1.1: icmp_seq=1 ttl=55 time=18.0 ms"},
+			"eth0 8.8.8.8":  {out: "64 bytes from 8.8.8.8: icmp_seq=1 ttl=55 time=18.0 ms"},
 		},
 	}
 	ctx := context.Background()
@@ -194,6 +198,83 @@ func TestLive_OnlinePeer(t *testing.T) {
 	}
 }
 
+func TestLive_ConnectedPeersKeepServerRole(t *testing.T) {
+	t.Parallel()
+
+	now := time.Date(2026, 10, 11, 12, 0, 0, 0, time.UTC)
+	root := t.TempDir()
+	mustWrite(t, filepath.Join(root, "wg_confs", "wg0.conf"),
+		"[Interface]\nListenPort = 51820\n\n[Peer]\nAllowedIPs = 10.13.13.2/32\n")
+	mustWrite(t, filepath.Join(root, "wg_confs", "wgup1.conf"),
+		"[Interface]\nAddress = 10.0.0.2/32\n\n[Peer]\nendpoint = [2001:db8::10]:51820\nAllowedIPs = 0.0.0.0/0\n")
+	mustWrite(t, filepath.Join(root, "peer_wolf", "publickey-peer_wolf"), "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL=\n")
+	handshake := strconv.FormatInt(now.Add(-20*time.Second).Unix(), 10)
+	dump := "wg0\tREDACTED\tAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\t51820\t8\n" +
+		"wg0\tLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL=\tREDACTED\t[2001:db8:1::25]:52133\t10.13.13.2/32,fd00::2/128\t" + handshake + "\t100\t200\t25\n" +
+		"wg0\tMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM=\tREDACTED\t203.0.113.25:41820\t10.13.13.3/32\t" + handshake + "\t1\t2\t25\n" +
+		"wgup1\tREDACTED\tGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG=\t40001\t5\n" +
+		"wgup1\tHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH=\tREDACTED\t[2001:db8::10]:51820\t0.0.0.0/0\t" + handshake + "\t1\t1\toff\n"
+	live := NewLive(config.Config{ConfigDir: root, DirectInterface: "eth0", PingTargets: []string{"2606:4700:4700::1111"}})
+	live.now = func() time.Time { return now }
+	live.run = fakeRunner{
+		dumpOut: dump,
+		linkOut: "eth0 UP\nwg0 UNKNOWN\nwgup1 UNKNOWN\n",
+		pings: map[string]cmdResult{
+			"wgup1 2606:4700:4700::1111": {out: "64 bytes from 2606:4700:4700::1111: icmp_seq=1 ttl=55 time=9.0 ms"},
+			"eth0 2606:4700:4700::1111":  {out: "64 bytes from 2606:4700:4700::1111: icmp_seq=1 ttl=55 time=7.0 ms"},
+		},
+	}
+	ctx := context.Background()
+
+	server, err := live.Server(ctx)
+	if err != nil || !server.Up || server.Interface != "wg0" {
+		t.Fatalf("Server() = %+v, %v", server, err)
+	}
+	peers, err := live.Peers(ctx)
+	if err != nil {
+		t.Fatalf("Peers() error = %v", err)
+	}
+	if len(peers) != 2 {
+		t.Fatalf("len(Peers) = %d, want 2", len(peers))
+	}
+	if peers[0].Name != "wolf" || peers[0].Endpoint != "[2001:db8:1::25]:52133" {
+		t.Fatalf("peer[0] = %+v", peers[0])
+	}
+	if peers[1].Endpoint != "203.0.113.25:41820" {
+		t.Fatalf("peer[1] = %+v", peers[1])
+	}
+
+	exits, err := live.Exits(ctx)
+	if err != nil {
+		t.Fatalf("Exits() error = %v", err)
+	}
+	if len(exits) != 2 {
+		t.Fatalf("Exits() = %+v, want wgup1 and eth0", exits)
+	}
+	if exits[0].Name != "wgup1" || exits[0].Endpoint != "[2001:db8::10]:51820" {
+		t.Fatalf("exit[0] = %+v", exits[0])
+	}
+	if !exits[0].Pings[0].OK || exits[0].Pings[0].Latency != 9*time.Millisecond {
+		t.Fatalf("wgup1 IPv6 ping = %+v", exits[0].Pings[0])
+	}
+}
+
+func TestLive_ExitIPBothFamiliesFail(t *testing.T) {
+	t.Parallel()
+
+	live := NewLive(config.Config{DirectInterface: "eth0"})
+	live.run = fakeRunner{
+		linkOut: "eth0 UP\n",
+		ips: map[string]cmdResult{
+			"eth0 4": {err: errors.New("timeout")},
+			"eth0 6": {out: "192.0.2.1\n"},
+		},
+	}
+	if ips, err := live.ExitIP(context.Background(), "eth0"); err == nil {
+		t.Fatalf("ExitIP() = %+v, want error", ips)
+	}
+}
+
 func TestLive_DumpError(t *testing.T) {
 	t.Parallel()
 
@@ -214,13 +295,16 @@ func fixtureRunner() fakeRunner {
 			"wgup1 8.8.8.8": ok,
 			"wgup2 1.1.1.1": ok,
 			"wgup2 8.8.8.8": ok,
-			"eth0 1.1.1.1":     ok,
-			"eth0 8.8.8.8":     ok,
+			"eth0 1.1.1.1":  ok,
+			"eth0 8.8.8.8":  ok,
 		},
 		ips: map[string]cmdResult{
-			"wgup1": {out: "192.0.2.10\n"},
-			"wgup2": {out: "198.51.100.20\n"},
-			"eth0":     {out: "192.0.2.1\n"},
+			"wgup1 4": {out: "192.0.2.10\n"},
+			"wgup1 6": {out: "2001:db8::10\n"},
+			"wgup2 4": {err: errors.New("curl: (7) Failed to connect")},
+			"wgup2 6": {out: "2001:db8::20\n"},
+			"eth0 4":  {out: "192.0.2.1\n"},
+			"eth0 6":  {err: errors.New("curl: (7) Couldn't connect to server")},
 		},
 	}
 }

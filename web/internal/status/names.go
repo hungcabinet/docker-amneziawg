@@ -3,6 +3,7 @@ package status
 import (
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -10,7 +11,10 @@ const (
 	peerDirPrefix     = "peer"
 	peerDisplayPrefix = "peer_"
 	shortKeyLen       = 8
+	wgConfsDir        = "wg_confs"
 )
+
+var confEndpointRe = regexp.MustCompile(`(?im)^[ \t]*Endpoint[ \t]*=`)
 
 type peerFile struct {
 	Name   string
@@ -66,4 +70,23 @@ func loadPeerFiles(configDir string) (map[string]peerFile, error) {
 		}
 	}
 	return out, nil
+}
+
+// assignRoles marks interfaces from wg_confs/<name>.conf: a conf with an
+// Endpoint dials out (tunnel), one without listens for peers (server).
+func assignRoles(ifaces []awgInterface, configDir string) {
+	for i := range ifaces {
+		if !validIface(ifaces[i].Name) {
+			continue
+		}
+		text, err := os.ReadFile(filepath.Join(configDir, wgConfsDir, ifaces[i].Name+".conf"))
+		if err != nil {
+			continue
+		}
+		if confEndpointRe.Match(text) {
+			ifaces[i].role = roleTunnel
+		} else {
+			ifaces[i].role = roleServer
+		}
+	}
 }

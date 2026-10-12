@@ -24,7 +24,7 @@
         </div>
         <div class="muted">last seen: {{handshake .LastHandshake}}</div>
       </div>
-      <p>Received {{bytes .RxBytes}} · sent {{bytes .TxBytes}}</p>
+      <p>Received {{bytes .RxBytes}} · sent {{bytes .TxBytes}}{{if .Endpoint}} · <span class="muted">from {{.Endpoint}}</span>{{end}}</p>
       <div class="actions">
         <button type="button" onclick="document.getElementById('qr-{{.Name}}').showModal()">QR code</button>
         <button type="button" onclick="copyConfig('cfg-{{.Name}}')">Copy config</button>

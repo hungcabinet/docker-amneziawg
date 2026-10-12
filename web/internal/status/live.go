@@ -85,6 +85,7 @@ func (l *Live) Peers(ctx context.Context) ([]Peer, error) {
 			LastHandshake: last,
 			RxBytes:       raw.Rx,
 			TxBytes:       raw.Tx,
+			Endpoint:      displayEndpoint(raw.Endpoint),
 			Config:        configText,
 		})
 	}
@@ -103,7 +104,7 @@ func (l *Live) Exits(ctx context.Context) ([]Exit, error) {
 		if !iface.isTunnel() {
 			continue
 		}
-		exits = append(exits, Exit{Name: iface.Name, Kind: ExitKindTunnel})
+		exits = append(exits, Exit{Name: iface.Name, Kind: ExitKindTunnel, Endpoint: iface.endpoint()})
 		seen[iface.Name] = true
 	}
 	direct := cleanIface(l.cfg.DirectInterface)
@@ -114,18 +115,32 @@ func (l *Live) Exits(ctx context.Context) ([]Exit, error) {
 	return exits, nil
 }
 
-// ExitIP queries the public IPv4 of a known exit interface on demand.
-func (l *Live) ExitIP(ctx context.Context, iface string) (string, error) {
+// ExitIP queries the public IPv4 and IPv6 of a known exit interface on demand.
+// It fails only when neither family answers.
+func (l *Live) ExitIP(ctx context.Context, iface string) (ExitIPs, error) {
 	iface = cleanIface(iface)
 	known, err := l.knownExits(ctx)
 	if err != nil {
-		return "", err
+		return ExitIPs{}, err
 	}
 	if !validIface(iface) || !known[iface] {
-		return "", fmt.Errorf("%w: %s", ErrUnknownInterface, iface)
+		return ExitIPs{}, fmt.Errorf("%w: %s", ErrUnknownInterface, iface)
 	}
-	out, err := l.run.exitIP(ctx, iface)
-	return parseExitIP(out, err)
+	var ips ExitIPs
+	var err4, err6 error
+	var wg sync.WaitGroup
+	wg.Go(func() { ips.V4, err4 = l.lookupIP(ctx, iface, familyV4) })
+	wg.Go(func() { ips.V6, err6 = l.lookupIP(ctx, iface, familyV6) })
+	wg.Wait()
+	if err4 != nil && err6 != nil {
+		return ExitIPs{}, errors.Join(err4, err6)
+	}
+	return ips, nil
+}
+
+func (l *Live) lookupIP(ctx context.Context, iface string, family ipFamily) (string, error) {
+	out, err := l.run.exitIP(ctx, iface, family)
+	return parseExitIP(out, err, family)
 }
 
 func (l *Live) interfaces(ctx context.Context) ([]awgInterface, error) {
@@ -133,7 +148,9 @@ func (l *Live) interfaces(ctx context.Context) ([]awgInterface, error) {
 	if err != nil {
 		return nil, fmt.Errorf("awg dump: %w", err)
 	}
-	return parseDump(out), nil
+	ifaces := parseDump(out)
+	assignRoles(ifaces, l.cfg.ConfigDir)
+	return ifaces, nil
 }
 
 func (l *Live) linkSet(ctx context.Context) (map[string]bool, error) {

@@ -126,13 +126,21 @@ func TestMock_Scene(t *testing.T) {
 		t.Fatalf("direct = %+v", exits[2])
 	}
 
-	ip, err := m.ExitIP(ctx, "wg1")
-	if err != nil || ip != "192.0.2.10" {
-		t.Fatalf("ExitIP(wg1) = %q, %v", ip, err)
+	if exits[0].Endpoint == "" || exits[2].Endpoint != "" {
+		t.Fatalf("exit endpoints = %q, %q", exits[0].Endpoint, exits[2].Endpoint)
 	}
-	ip, err = m.ExitIP(ctx, "ens3")
-	if err != nil || ip != "192.0.2.1" {
-		t.Fatalf("ExitIP(ens3) = %q, %v", ip, err)
+
+	ips, err := m.ExitIP(ctx, "wg1")
+	if err != nil || ips != (ExitIPs{V4: "192.0.2.10", V6: "2001:db8::10"}) {
+		t.Fatalf("ExitIP(wg1) = %+v, %v", ips, err)
+	}
+	ips, err = m.ExitIP(ctx, "wg2")
+	if err != nil || ips.V4 == "" || ips.V6 != "" {
+		t.Fatalf("ExitIP(wg2) = %+v, %v", ips, err)
+	}
+	ips, err = m.ExitIP(ctx, "ens3")
+	if err != nil || ips.V4 != "192.0.2.1" {
+		t.Fatalf("ExitIP(ens3) = %+v, %v", ips, err)
 	}
 	if _, err := m.ExitIP(ctx, "missing"); err == nil {
 		t.Fatal("ExitIP(missing) = nil")

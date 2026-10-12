@@ -3,6 +3,7 @@ package status
 import (
 	"errors"
 	"fmt"
+	"net/netip"
 	"regexp"
 	"strconv"
 	"strings"
@@ -62,7 +63,7 @@ func skipPingLine(line string) bool {
 	}
 }
 
-func parseExitIP(stdout string, err error) (string, error) {
+func parseExitIP(stdout string, err error, family ipFamily) (string, error) {
 	ip := strings.TrimSpace(stdout)
 	if err != nil {
 		return "", fmt.Errorf("exit ip: %w", err)
@@ -73,7 +74,14 @@ func parseExitIP(stdout string, err error) (string, error) {
 	if strings.ContainsFunc(ip, unicode.IsSpace) {
 		return "", errors.New("exit ip: unexpected response")
 	}
-	return ip, nil
+	addr, perr := netip.ParseAddr(ip)
+	if perr != nil {
+		return "", errors.New("exit ip: not an address")
+	}
+	if (family == familyV4) != addr.Is4() {
+		return "", fmt.Errorf("exit ip: not an IPv%s address", family)
+	}
+	return addr.String(), nil
 }
 
 func validIface(name string) bool {

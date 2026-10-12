@@ -8,10 +8,21 @@ import (
 
 const peerDumpFields = 9
 
+type ifaceRole int
+
+const (
+	roleUnknown ifaceRole = iota
+	roleServer
+	roleTunnel
+)
+
 type awgInterface struct {
 	Name       string
 	ListenPort int
 	Peers      []awgPeer
+	// role comes from the interface's wg_confs file; roleUnknown falls back
+	// to guessing from peer endpoints.
+	role ifaceRole
 }
 
 type awgPeer struct {
@@ -73,7 +84,12 @@ func parseInt64(s string) int64 {
 	return n
 }
 
+// isServer without a conf file is a guess: a server peer shows its remote
+// address as endpoint once it has connected, so this misfires on a live server.
 func (iface awgInterface) isServer() bool {
+	if iface.role != roleUnknown {
+		return iface.role == roleServer
+	}
 	if len(iface.Peers) == 0 {
 		return false
 	}
@@ -86,6 +102,9 @@ func (iface awgInterface) isServer() bool {
 }
 
 func (iface awgInterface) isTunnel() bool {
+	if iface.role != roleUnknown {
+		return iface.role == roleTunnel
+	}
 	for _, peer := range iface.Peers {
 		if hasEndpoint(peer.Endpoint) {
 			return true
@@ -94,8 +113,26 @@ func (iface awgInterface) isTunnel() bool {
 	return false
 }
 
+// endpoint returns the first known peer endpoint, which for a tunnel is the
+// remote server it connects to.
+func (iface awgInterface) endpoint() string {
+	for _, peer := range iface.Peers {
+		if hasEndpoint(peer.Endpoint) {
+			return peer.Endpoint
+		}
+	}
+	return ""
+}
+
 func hasEndpoint(endpoint string) bool {
 	return endpoint != "" && endpoint != "(none)"
+}
+
+func displayEndpoint(endpoint string) string {
+	if hasEndpoint(endpoint) {
+		return endpoint
+	}
+	return ""
 }
 
 func findServer(ifaces []awgInterface) (awgInterface, bool) {

@@ -21,8 +21,9 @@
           <span class="muted">{{kind .Kind}}</span>
           {{if eq $.SelectedExit .Name}}<span class="badge ok">current exit</span>{{end}}
         </div>
+        {{if .Endpoint}}<div class="muted">endpoint: {{.Endpoint}}</div>{{end}}
       </div>
-      {{if eq $.IPIface .Name}}<p>Exit IP: <strong>{{$.IP}}</strong></p>{{end}}
+      {{if eq $.IPIface .Name}}<p>Exit IPv4: <strong>{{or $.IP4 "none"}}</strong> · IPv6: <strong>{{or $.IP6 "none"}}</strong></p>{{end}}
       <table>
         <thead><tr><th>Address</th><th>Ping</th></tr></thead>
         <tbody>

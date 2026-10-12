@@ -29,7 +29,14 @@ type Provider interface {
 	Server(ctx context.Context) (ServerStatus, error)
 	Peers(ctx context.Context) ([]Peer, error)
 	Exits(ctx context.Context) ([]Exit, error)
-	ExitIP(ctx context.Context, iface string) (string, error)
+	ExitIP(ctx context.Context, iface string) (ExitIPs, error)
+}
+
+// ExitIPs is the public address seen through an exit, per address family.
+// A field is empty when that family has no working route through the exit.
+type ExitIPs struct {
+	V4 string
+	V6 string
 }
 
 // ServerStatus describes the local VPN server interface.
@@ -46,7 +53,9 @@ type Peer struct {
 	LastHandshake time.Time
 	RxBytes       int64
 	TxBytes       int64
-	Config        string
+	// Endpoint is the peer's last seen address, empty if it never connected.
+	Endpoint string
+	Config   string
 }
 
 // ExitKind is tunnel or direct.
@@ -62,9 +71,11 @@ type PingResult struct {
 
 // Exit is a client tunnel or the direct uplink.
 type Exit struct {
-	Name  string
-	Kind  ExitKind
-	Pings []PingResult
+	Name string
+	Kind ExitKind
+	// Endpoint is the remote server of a tunnel; empty for the direct uplink.
+	Endpoint string
+	Pings    []PingResult
 }
 
 // New returns the provider selected by cfg.Source.

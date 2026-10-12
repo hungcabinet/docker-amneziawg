@@ -47,14 +47,27 @@ ping: sendmsg: Required key not available
 func TestParseExitIP(t *testing.T) {
 	t.Parallel()
 
-	ip, err := parseExitIP("192.0.2.10\n", nil)
+	ip, err := parseExitIP("192.0.2.10\n", nil, familyV4)
 	if err != nil || ip != "192.0.2.10" {
-		t.Fatalf("parseExitIP() = %q, %v", ip, err)
+		t.Fatalf("parseExitIP(v4) = %q, %v", ip, err)
 	}
-	if _, err := parseExitIP("", errors.New("exit status 7")); err == nil {
+	ip, err = parseExitIP("2001:DB8:0::10\n", nil, familyV6)
+	if err != nil || ip != "2001:db8::10" {
+		t.Fatalf("parseExitIP(v6) = %q, %v", ip, err)
+	}
+	if _, err := parseExitIP("", errors.New("exit status 7"), familyV4); err == nil {
 		t.Fatal("expected curl error")
 	}
-	if _, err := parseExitIP("", nil); err == nil {
+	if _, err := parseExitIP("", nil, familyV4); err == nil {
 		t.Fatal("expected empty response error")
+	}
+	if _, err := parseExitIP("<html>", nil, familyV4); err == nil {
+		t.Fatal("expected non-address error")
+	}
+	if _, err := parseExitIP("192.0.2.10", nil, familyV6); err == nil {
+		t.Fatal("expected family mismatch for v4 answer to a v6 lookup")
+	}
+	if _, err := parseExitIP("2001:db8::10", nil, familyV4); err == nil {
+		t.Fatal("expected family mismatch for v6 answer to a v4 lookup")
 	}
 }

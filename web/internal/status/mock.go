@@ -66,6 +66,7 @@ func (m *Mock) Peers(context.Context) ([]Peer, error) {
 			LastHandshake: now.Add(-30 * time.Second),
 			RxBytes:       12 * 1024 * 1024,
 			TxBytes:       3 * 1024 * 1024,
+			Endpoint:      "203.0.113.25:41820",
 			Config:        mockConfig("bunny", "10.13.13.2/32"),
 		},
 		{
@@ -74,6 +75,7 @@ func (m *Mock) Peers(context.Context) ([]Peer, error) {
 			LastHandshake: now.Add(-2 * time.Hour),
 			RxBytes:       450 * 1024 * 1024,
 			TxBytes:       80 * 1024 * 1024,
+			Endpoint:      "[2001:db8:1::25]:52133",
 			Config:        mockConfig("bear", "10.13.13.3/32"),
 		},
 		{
@@ -91,14 +93,16 @@ func (m *Mock) Peers(context.Context) ([]Peer, error) {
 func (m *Mock) Exits(context.Context) ([]Exit, error) {
 	return []Exit{
 		{
-			Name:  "wg1",
-			Kind:  ExitKindTunnel,
-			Pings: m.pings("wg1", true, 12*time.Millisecond),
+			Name:     "wg1",
+			Kind:     ExitKindTunnel,
+			Endpoint: "[2001:db8::10]:51820",
+			Pings:    m.pings("wg1", true, 12*time.Millisecond),
 		},
 		{
-			Name:  "wg2",
-			Kind:  ExitKindTunnel,
-			Pings: m.mixedPings("wg2"),
+			Name:     "wg2",
+			Kind:     ExitKindTunnel,
+			Endpoint: "198.51.100.20:51820",
+			Pings:    m.mixedPings("wg2"),
 		},
 		{
 			Name:  m.direct,
@@ -108,17 +112,17 @@ func (m *Mock) Exits(context.Context) ([]Exit, error) {
 	}, nil
 }
 
-// ExitIP returns a distinct TEST-NET address per known interface.
-func (m *Mock) ExitIP(_ context.Context, iface string) (string, error) {
+// ExitIP returns distinct documentation addresses per known interface; wg2 has no IPv6.
+func (m *Mock) ExitIP(_ context.Context, iface string) (ExitIPs, error) {
 	switch iface {
 	case "wg1":
-		return "192.0.2.10", nil
+		return ExitIPs{V4: "192.0.2.10", V6: "2001:db8::10"}, nil
 	case "wg2":
-		return "198.51.100.20", nil
+		return ExitIPs{V4: "198.51.100.20"}, nil
 	case m.direct:
-		return "192.0.2.1", nil
+		return ExitIPs{V4: "192.0.2.1", V6: "2001:db8::1"}, nil
 	default:
-		return "", fmt.Errorf("unknown interface %q", iface)
+		return ExitIPs{}, fmt.Errorf("unknown interface %q", iface)
 	}
 }
 

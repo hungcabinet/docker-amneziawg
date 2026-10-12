@@ -36,7 +36,8 @@ type exitsPage struct {
 	Exits        []status.Exit
 	SelectedExit string
 	IPIface      string
-	IP           string
+	IP4          string
+	IP6          string
 	Error        string
 	Flash        string
 }
@@ -148,7 +149,8 @@ func (s *Server) handleExits(w http.ResponseWriter, r *http.Request) {
 	page := exitsPage{
 		chrome:  s.pageChrome(r),
 		IPIface: r.URL.Query().Get("ip_iface"),
-		IP:      r.URL.Query().Get("ip"),
+		IP4:     r.URL.Query().Get("ip4"),
+		IP6:     r.URL.Query().Get("ip6"),
 		Error:   r.URL.Query().Get("error"),
 		Flash:   r.URL.Query().Get("ok"),
 	}
@@ -196,14 +198,15 @@ func (s *Server) handleExitIP(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/exits?error="+url.QueryEscape("invalid interface name"), http.StatusSeeOther)
 		return
 	}
-	ip, err := s.provider.ExitIP(r.Context(), iface)
+	ips, err := s.provider.ExitIP(r.Context(), iface)
 	if err != nil {
 		http.Redirect(w, r, "/exits?error="+url.QueryEscape(userFacing(err)), http.StatusSeeOther)
 		return
 	}
 	q := url.Values{}
 	q.Set("ip_iface", iface)
-	q.Set("ip", ip)
+	q.Set("ip4", ips.V4)
+	q.Set("ip6", ips.V6)
 	http.Redirect(w, r, "/exits?"+q.Encode(), http.StatusSeeOther)
 }
 
